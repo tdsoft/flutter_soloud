@@ -100,6 +100,7 @@ class _FilterFxState extends State<FilterFx> {
               value: params[index],
               onChanged: (value) async {
                 params[index] = value;
+                print('params ${params}');
                 SoLoud.instance
                     .setFilterParameter(widget.filterType, index, value);
                 if (mounted) setState(() {});

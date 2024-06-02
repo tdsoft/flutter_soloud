@@ -1,8 +1,10 @@
 import 'dart:math';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_soloud/flutter_soloud.dart';
+import 'package:flutter_soloud_example/waveform/filter_fx.dart';
 import 'package:logging/logging.dart';
 
 class Page3DAudio extends StatefulWidget {
@@ -17,21 +19,28 @@ class _Page3DAudioState extends State<Page3DAudio> {
 
   AudioSource? currentSound;
   bool spinAround = false;
+  bool playFromNetwork = false;
+  bool isLoading = false;
+
+  late SoundHandle currentSoundHandle;
 
   @override
   Widget build(BuildContext context) {
     if (!SoLoud.instance.isInitialized) return const SizedBox.shrink();
 
     return Scaffold(
-      body: Center(
+      body: SingleChildScrollView(
         child: Column(
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: FilterFx(filterType: FilterType.eqFilter),
+            ),
+            Wrap(
               children: [
                 ElevatedButton(
                   onPressed: playFromUrl,
-                  child: const Text('spin around\nsound from network'),
+                  child: const Text('Play from network'),
                 ),
                 const SizedBox(width: 16),
                 ElevatedButton(
@@ -39,16 +48,29 @@ class _Page3DAudioState extends State<Page3DAudio> {
                       play((MediaQuery.sizeOf(context).width - 20) / 2),
                   child: const Text('play'),
                 ),
+                ElevatedButton(
+                  onPressed: () =>
+                      SoLoud.instance.setPause(currentSoundHandle, true),
+                  child: const Text('Pause'),
+                ),
+                ElevatedButton(
+                  onPressed: () =>
+                      SoLoud.instance.setPause(currentSoundHandle, false),
+                  child: const Text('Resume'),
+                ),
               ],
             ),
             const SizedBox(height: 16),
-            Audio3DWidget(
-              key: UniqueKey(),
-              spinAround: spinAround,
-              sound: currentSound,
-              width: MediaQuery.sizeOf(context).width * .8 - 20,
-              height: MediaQuery.sizeOf(context).width * .8 - 20,
-            ),
+            if (isLoading)
+              const CircularProgressIndicator()
+            else
+              Audio3DWidget(
+                key: UniqueKey(),
+                spinAround: spinAround,
+                sound: currentSound,
+                width: MediaQuery.sizeOf(context).width * .8 - 20,
+                height: MediaQuery.sizeOf(context).width * .8 - 20,
+              ),
           ],
         ),
       ),
@@ -67,6 +89,11 @@ class _Page3DAudioState extends State<Page3DAudio> {
         return;
       }
     }
+    if (mounted) {
+      setState(() {
+        isLoading = true;
+      });
+    }
 
     /// load the audio file
     currentSound = await SoLoud.instance.loadUrl(
@@ -74,11 +101,16 @@ class _Page3DAudioState extends State<Page3DAudio> {
     );
 
     /// play it
-    await SoLoud.instance.play3d(currentSound!, 0, 0, 0);
+    currentSoundHandle = await SoLoud.instance.play3d(currentSound!, 0, 0, 0);
 
     spinAround = true;
+    playFromNetwork = true;
 
-    if (mounted) setState(() {});
+    if (mounted) {
+      setState(() {
+        isLoading = false;
+      });
+    }
   }
 
   /// Play the audio setting min and max distance and attenuation
@@ -95,10 +127,16 @@ class _Page3DAudioState extends State<Page3DAudio> {
     }
 
     /// load the audio file
-    currentSound = await SoLoud.instance.loadAsset('assets/audio/siren.mp3');
+    if (mounted) {
+      setState(() {
+        isLoading = true;
+      });
+    }
+    currentSound =
+        await SoLoud.instance.loadAsset('assets/audio/X trackTure.mp3');
 
     /// play it
-    final newHandle = await SoLoud.instance.play3d(
+    currentSoundHandle = await SoLoud.instance.play3d(
       currentSound!,
       0,
       0,
@@ -107,21 +145,27 @@ class _Page3DAudioState extends State<Page3DAudio> {
     );
 
     SoLoud.instance.set3dSourceMinMaxDistance(
-      newHandle,
+      currentSoundHandle,
       50,
       maxDistance,
     );
-    SoLoud.instance.set3dSourceAttenuation(newHandle, 1, 0.5);
+    SoLoud.instance.set3dSourceAttenuation(currentSoundHandle, 1, 0.5);
 
     spinAround = false;
+    playFromNetwork = false;
 
-    if (mounted) setState(() {});
+    if (mounted) {
+      setState(() {
+        isLoading = false;
+      });
+    }
   }
 }
 
 class Audio3DWidget extends StatefulWidget {
   const Audio3DWidget({
     required this.spinAround,
+    this.playFromNetwork = false,
     required this.width,
     required this.height,
     this.sound,
@@ -129,6 +173,7 @@ class Audio3DWidget extends StatefulWidget {
   });
 
   final bool spinAround;
+  final bool playFromNetwork;
   final AudioSource? sound;
   final double width;
   final double height;
@@ -157,7 +202,9 @@ class _Audio3DWidgetState extends State<Audio3DWidget>
     super.initState();
     dx = animVel;
     ticker = Ticker(_tick);
-    if (widget.sound != null) ticker.start();
+    if (widget.playFromNetwork) {
+      if (widget.sound != null) ticker.start();
+    }
   }
 
   @override
@@ -169,6 +216,9 @@ class _Audio3DWidgetState extends State<Audio3DWidget>
   void _tick(Duration elapsed) {
     final prevX = posX;
     final prevY = posY;
+    if (!widget.playFromNetwork) {
+      return;
+    }
     if (widget.spinAround) {
       final circleRadius = Offset(posX - center.dx, posY - center.dy).distance;
       angle += pi / (animVel / (circleRadius / widget.width)) / 50;
@@ -188,6 +238,7 @@ class _Audio3DWidgetState extends State<Audio3DWidget>
     velY =
         -100 * delta.dy / (timeStamp.inMilliseconds - precTime.inMilliseconds);
     if (widget.sound != null) {
+      print('$posX : $posY');
       SoLoud.instance.set3dSourceParameters(
         widget.sound!.handles.first,
         posX,
@@ -212,7 +263,11 @@ class _Audio3DWidgetState extends State<Audio3DWidget>
             precTime = Duration.zero;
             ticker.stop();
           },
-          onPointerUp: (event) => ticker.start(),
+          onPointerUp: (event) {
+            if (widget.playFromNetwork) {
+              if (widget.sound != null) ticker.start();
+            }
+          },
           onPointerMove: (event) {
             posX = event.localPosition.dx - widget.width / 2;
             posY = event.localPosition.dy - widget.height / 2;
@@ -255,12 +310,22 @@ class _Audio3DWidgetState extends State<Audio3DWidget>
             );
           },
         ),
-        Text('Pos x: ${posX.toStringAsFixed(1)}'),
-        Text('Pos y: ${posY.toStringAsFixed(1)}'),
-        Text('Pos z: ${posZ.toStringAsFixed(1)}'),
-        Text('Velocity x: ${velX.toStringAsFixed(1)}'),
-        Text('Velocity y: ${velY.toStringAsFixed(1)}'),
-        const Text('Velocity z: 0'),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('Pos x: ${posX.toStringAsFixed(1)}'),
+            Text('Pos y: ${posY.toStringAsFixed(1)}'),
+            Text('Pos z: ${posZ.toStringAsFixed(1)}'),
+          ],
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('Velocity x: ${velX.toStringAsFixed(1)}'),
+            Text('Velocity y: ${velY.toStringAsFixed(1)}'),
+            const Text('Velocity z: 0'),
+          ],
+        ),
       ],
     );
   }

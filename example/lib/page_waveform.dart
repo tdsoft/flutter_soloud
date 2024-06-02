@@ -215,7 +215,7 @@ class _PageWaveformState extends State<PageWaveform> {
                   ),
                   const SizedBox(height: 8),
                   SizedBox(
-                    height: 210,
+                    height: 350,
                     child: TabBarView(
                       physics: const NeverScrollableScrollPhysics(),
                       children: [

@@ -44,7 +44,10 @@ namespace SoLoud
 			BAND5 = 5,
 			BAND6 = 6,
 			BAND7 = 7,
-			BAND8 = 8
+			BAND8 = 8,
+			BAND9 = 9,
+			BAND10 = 10,
+			BAND11 = 11,
 		};
 		EqFilter *mParent;
 	public:
@@ -67,14 +70,17 @@ namespace SoLoud
 			BAND5 = 5,
 			BAND6 = 6,
 			BAND7 = 7,
-			BAND8 = 8
+			BAND8 = 8,
+			BAND9 = 9,
+			BAND10 = 10,
+			BAND11 = 11
 		};
 		virtual int getParamCount();
 		virtual const char* getParamName(unsigned int aParamIndex);
 		virtual unsigned int getParamType(unsigned int aParamIndex);
 		virtual float getParamMax(unsigned int aParamIndex);
 		virtual float getParamMin(unsigned int aParamIndex);
-		float mVolume[8];
+		float mVolume[11];
 		result setParam(unsigned int aBand, float aVolume);
 		virtual FilterInstance *createInstance();
 		EqFilter();
