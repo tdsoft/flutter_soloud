@@ -12,14 +12,14 @@ namespace SoLoud
 {
     EqFilterInstance::EqFilterInstance(EqFilter *aParent)
     {
-        LOGI("EqFilterInstance::EqFilterInstance - Initializing");
+//        LOGI("EqFilterInstance::EqFilterInstance - Initializing");
         mParent = aParent;
         initParams(11); // Updated to include 11 bands
         for (int i = 0; i < 11; ++i)
         {
             mParam[i] = aParent->mVolume[i];
         }
-        LOGI("EqFilterInstance::EqFilterInstance - Initialization complete");
+//        LOGI("EqFilterInstance::EqFilterInstance - Initialization complete");
     }
 
     float EqFilterInstance::catmullrom(float t, float p0, float p1, float p2, float p3)
@@ -40,7 +40,7 @@ namespace SoLoud
 //        LOGI("EqFilterInstance::fftFilterChannel - Start");
         comp2MagPhase(aFFTBuffer, aSamples / 2);
         unsigned int p;
-        unsigned int segments = 16; // Moderate increase to 64 for balanced performance
+        unsigned int segments = 11; // Moderate increase to 64 for balanced performance
         for (p = 0; p < aSamples / 2; p++)
         {
             int i = (int)floor(sqrt(p / (float)(aSamples / 2)) * (aSamples / 2));

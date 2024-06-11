@@ -1,3 +1,4 @@
+
 set (TARGET_NAME soloud)
 
 set (HEADER_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../src/soloud/include)
